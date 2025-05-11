@@ -13,14 +13,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = sanitize($_POST['email']);
         $phone = sanitize($_POST['phone']);
         $address = sanitize($_POST['address']);
+        $gender = sanitize($_POST['gender']);
         $is_staff = isset($_POST['is_staff']) ? 1 : 0;
         $join_date = sanitize($_POST['join_date']);
+        $birth_date = sanitize($_POST['birth_date']);
+        
+        // Handle file upload
+        $passport_picture = '';
+        if (isset($_FILES['passport_picture']) && $_FILES['passport_picture']['error'] == UPLOAD_ERR_OK) {
+            $upload_dir = 'uploads/passport_pictures/';
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+            
+            $file_ext = pathinfo($_FILES['passport_picture']['name'], PATHINFO_EXTENSION);
+            $file_name = uniqid('passport_') . '.' . $file_ext;
+            $file_path = $upload_dir . $file_name;
+            
+            if (move_uploaded_file($_FILES['passport_picture']['tmp_name'], $file_path)) {
+                $passport_picture = $file_path;
+            }
+        }
 
-        $sql = "INSERT INTO members (first_name, last_name, email, phone, address, is_staff, join_date) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO members (first_name, last_name, email, phone, address, gender, passport_picture, is_staff, join_date, birth_date) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("sssssis", $first_name, $last_name, $email, $phone, $address, $is_staff, $join_date);
+        $stmt->bind_param("sssssssiss", $first_name, $last_name, $email, $phone, $address, $gender, $passport_picture, $is_staff, $join_date, $birth_date);
         
         if ($stmt->execute()) {
             $_SESSION['success'] = "Member added successfully!";
@@ -39,8 +58,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = sanitize($_POST['email']);
         $phone = sanitize($_POST['phone']);
         $address = sanitize($_POST['address']);
+        $gender = sanitize($_POST['gender']);
         $is_staff = isset($_POST['is_staff']) ? 1 : 0;
         $join_date = sanitize($_POST['join_date']);
+        $birth_date = sanitize($_POST['birth_date']);
+        
+        // Handle file upload if a new file is provided
+        $passport_picture = sanitize($_POST['existing_passport_picture']);
+        if (isset($_FILES['passport_picture']) && $_FILES['passport_picture']['error'] == UPLOAD_ERR_OK) {
+            $upload_dir = 'uploads/passport_pictures/';
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+            
+            // Delete old picture if it exists
+            if (!empty($passport_picture) && file_exists($passport_picture)) {
+                unlink($passport_picture);
+            }
+            
+            $file_ext = pathinfo($_FILES['passport_picture']['name'], PATHINFO_EXTENSION);
+            $file_name = uniqid('passport_') . '.' . $file_ext;
+            $file_path = $upload_dir . $file_name;
+            
+            if (move_uploaded_file($_FILES['passport_picture']['tmp_name'], $file_path)) {
+                $passport_picture = $file_path;
+            }
+        }
 
         $sql = "UPDATE members SET 
                 first_name = ?,
@@ -48,12 +91,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 email = ?,
                 phone = ?,
                 address = ?,
+                gender = ?,
+                passport_picture = ?,
                 is_staff = ?,
-                join_date = ?
+                join_date = ?,
+                birth_date = ?
                 WHERE id = ?";
         
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("sssssisi", $first_name, $last_name, $email, $phone, $address, $is_staff, $join_date, $id);
+        $stmt->bind_param("sssssssissi", $first_name, $last_name, $email, $phone, $address, $gender, $passport_picture, $is_staff, $join_date, $birth_date, $id);
         
         if ($stmt->execute()) {
             $_SESSION['success'] = "Member updated successfully!";
@@ -68,6 +114,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Delete member
         $id = intval($_POST['member_id']);
         
+        // First get the passport picture path to delete the file
+        $sql = "SELECT passport_picture FROM members WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $member = $result->fetch_assoc();
+        $stmt->close();
+        
+        // Delete the passport picture file if it exists
+        if (!empty($member['passport_picture']) && file_exists($member['passport_picture'])) {
+            unlink($member['passport_picture']);
+        }
+        
+        // Now delete the member record
         $sql = "DELETE FROM members WHERE id = ?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("i", $id);
@@ -320,7 +381,173 @@ body {
 .activity-item:nth-child(3) { animation-delay: 0.3s; }
 .activity-item:nth-child(4) { animation-delay: 0.4s; }
 .activity-item:nth-child(5) { animation-delay: 0.5s; }
-</style>
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 700px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: black;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="date"],
+.form-group input[type="password"],
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: inherit;
+}
+
+.form-group.checkbox {
+    display: flex;
+    align-items: center;
+}
+
+.form-group.checkbox input {
+    margin-right: 10px;
+}
+
+.btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--secondary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Table Styles */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.data-table th,
+.data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.data-table th {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 500;
+}
+
+.data-table tr:hover {
+    background-color: #f5f5f5;
+}
+
+.data-table img {
+    border-radius: 4px;
+}
+
+.actions {
+    display: flex;
+    gap: 5px;
+}
+
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 0.85rem;
+}
+
+.btn-edit {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.btn-edit:hover {
+    background-color: #3da8d8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(61, 168, 216, 0.2);
+}
+
+.btn-delete {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #c0392b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(192, 57, 43, 0.2);
+}
+
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+    </style>
     <link rel="stylesheet" href="admin.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -367,6 +594,8 @@ body {
                             <th>Name</th>
                             <th>Email</th>
                             <th>Phone</th>
+                            <th>Gender</th>
+                            <th>Picture</th>
                             <th>Staff</th>
                             <th>Birth Date</th>
                             <th>Join Date</th>
@@ -376,7 +605,7 @@ body {
                     <tbody>
                         <?php if (empty($members)): ?>
                             <tr>
-                                <td colspan="7">No members found</td>
+                                <td colspan="10">No members found</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($members as $member): ?>
@@ -385,6 +614,12 @@ body {
                                     <td><?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?></td>
                                     <td><?php echo htmlspecialchars($member['email']); ?></td>
                                     <td><?php echo htmlspecialchars($member['phone']); ?></td>
+                                    <td><?php echo htmlspecialchars($member['gender']); ?></td>
+                                    <td>
+                                        <?php if (!empty($member['passport_picture'])): ?>
+                                            <img src="<?php echo htmlspecialchars($member['passport_picture']); ?>" style="max-width: 50px; max-height: 50px;">
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?php echo $member['is_staff'] ? 'Yes' : 'No'; ?></td>
                                     <td><?php echo date('M j, Y', strtotime($member['birth_date'])); ?></td>
                                     <td><?php echo date('M j, Y', strtotime($member['join_date'])); ?></td>
@@ -409,8 +644,9 @@ body {
         <div class="modal-content">
             <span class="close">&times;</span>
             <h2 id="modalTitle">Add New Member</h2>
-            <form id="memberForm" method="POST">
+            <form id="memberForm" method="POST" enctype="multipart/form-data">
                 <input type="hidden" id="member_id" name="member_id">
+                <input type="hidden" id="existing_passport_picture" name="existing_passport_picture" value="">
                 <div class="form-group">
                     <label for="first_name">First Name</label>
                     <input type="text" id="first_name" name="first_name" required>
@@ -432,6 +668,20 @@ body {
                     <textarea id="address" name="address" rows="3"></textarea>
                 </div>
                 <div class="form-group">
+                    <label for="gender">Gender</label>
+                    <select id="gender" name="gender" required>
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="passport_picture">Passport Picture</label>
+                    <input type="file" id="passport_picture" name="passport_picture" accept="image/*">
+                    <div id="passport_preview" style="margin-top: 10px;"></div>
+                </div>
+                <div class="form-group">
                     <label for="birth_date">Birth Date</label>
                     <input type="date" id="birth_date" name="birth_date" required>
                 </div>
@@ -450,7 +700,6 @@ body {
         </div>
     </div>
 
-    <script src="admin.js"></script>
     <script>
         // Member modal functionality
         document.addEventListener('DOMContentLoaded', function() {
@@ -466,6 +715,8 @@ body {
                 modalTitle.textContent = 'Add New Member';
                 memberForm.reset();
                 document.getElementById('member_id').value = '';
+                document.getElementById('existing_passport_picture').value = '';
+                document.getElementById('passport_preview').innerHTML = '';
                 submitBtn.name = 'add_member';
                 submitBtn.textContent = 'Add Member';
                 modal.style.display = 'block';
@@ -501,9 +752,18 @@ body {
                                 document.getElementById('email').value = member.email;
                                 document.getElementById('phone').value = member.phone;
                                 document.getElementById('address').value = member.address;
+                                document.getElementById('gender').value = member.gender;
                                 document.getElementById('birth_date').value = member.birth_date;
                                 document.getElementById('join_date').value = member.join_date;
                                 document.getElementById('is_staff').checked = member.is_staff == 1;
+                                
+                                if (member.passport_picture) {
+                                    document.getElementById('existing_passport_picture').value = member.passport_picture;
+                                    document.getElementById('passport_preview').innerHTML = `<img src="${member.passport_picture}" style="max-width: 150px; max-height: 150px;">`;
+                                } else {
+                                    document.getElementById('existing_passport_picture').value = '';
+                                    document.getElementById('passport_preview').innerHTML = '';
+                                }
                                 
                                 submitBtn.name = 'update_member';
                                 submitBtn.textContent = 'Update Member';
@@ -512,6 +772,26 @@ body {
                         })
                         .catch(error => console.error('Error:', error));
                 });
+            });
+
+            // Image preview functionality
+            document.getElementById('passport_picture').addEventListener('change', function(e) {
+                const preview = document.getElementById('passport_preview');
+                preview.innerHTML = '';
+                
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.style.maxWidth = '150px';
+                        img.style.maxHeight = '150px';
+                        preview.appendChild(img);
+                    }
+                    
+                    reader.readAsDataURL(this.files[0]);
+                }
             });
         });
     </script>
