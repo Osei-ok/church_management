@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $stmt->close();
         
-        header("Location: umembers.php");
+        header("Location: members.php");
         exit;
     } elseif (isset($_POST['update_member'])) {
         // Update member
