@@ -2,19 +2,22 @@
 require_once 'config.php';
 require_once 'auth.php';
 
-// Create initial admin if none exists
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Create default admin if not exists
 createInitialAdmin();
 
-// Handle login form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
+    $email = $_POST['email'] ?? '';
     $password = $_POST['password'] ?? '';
-    
-    if (adminLogin($username, $password)) {
+
+    if (adminLogin($email, $password)) {
         header("Location: addashboard.php");
         exit;
     } else {
-        $error = "Invalid username or password";
+        $error = "Invalid email or password.";
     }
 }
 ?>
@@ -22,80 +25,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login -Church of Christ</title>
+    <title>Admin Login</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
         body {
             background-image: url('https://images.pexels.com/photos/236339/pexels-photo-236339.jpeg?auto=compress&cs=tinysrgb&w=600');
-            max-width  : 100%;
             background-size: cover;
-            height: 100vh; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
+            background-position: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .login-container {
-            background-color: rgba(177, 168, 168, 0.9);
+            background: rgba(255,255,255,0.95);
             padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
             max-width: 400px;
-            text-align: center;
-            animation: fadeIn 0.5s ease-in-out;
-        }
-
-        .login-header {
-            margin-bottom: 30px;
-        }
-
-        .login-header h1 {
-            color: #667eea;
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-
-        .login-header p {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 500;
-        }
-
-        .input-group input {
             width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #ddd;
+        }
+
+        h2 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ccc;
             border-radius: 8px;
             font-size: 16px;
-            transition: all 0.3s;
         }
 
-        .input-group input:focus {
-            border-color: #667eea;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        .show-password {
+            margin-top: 8px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
         }
 
-        .login-button {
+        .show-password input {
+            margin-right: 8px;
+        }
+
+        .btn {
             width: 100%;
             padding: 12px;
             background: linear-gradient(to right, #667eea, #764ba2);
@@ -103,106 +92,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 8px;
             color: white;
             font-size: 16px;
-            font-weight: 600;
+            font-weight: bold;
             cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 10px;
+            transition: all 0.3s ease;
         }
 
-        .login-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .divider {
-            margin: 25px 0;
-            position: relative;
-            height: 1px;
-            background-color: #ddd;
-        }
-
-        .divider-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: white;
-            padding: 0 10px;
-            color: #777;
-            font-size: 12px;
+        .btn:hover {
+            background: #556cd6;
         }
 
         .forgot-password {
             display: block;
+            text-align: center;
             margin-top: 15px;
+            font-size: 14px;
             color: #667eea;
             text-decoration: none;
-            font-size: 14px;
         }
 
         .forgot-password:hover {
             text-decoration: underline;
         }
 
-        .divider {
-            margin: 25px 0;
-            position: relative;
-            height: 1px;
-            background-color: #ddd;
+        .error {
+            text-align: center;
+            color: red;
+            margin-bottom: 15px;
         }
 
-        .divider-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: white;
-            padding: 0 10px;
-            color: #777;
-            font-size: 12px;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 480px) {
-            .login-container {
-                padding: 30px 20px;
-                margin: 0 15px;
-            }
+        .button-group {
+            margin-top: 20px;
         }
     </style>
-    <link rel="stylesheet" href="admin.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="login-container">
-        <div class="login-box">
-            <h1>Admin Login</h1>
-            <?php if (isset($error)): ?>
-                <div class="alert alert-error"><?php echo $error; ?></div>
-            <?php endif; ?>
-            <form method="POST" action="">
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required>
+        <h2>Admin Login</h2>
+
+        <?php if (isset($error)): ?>
+            <div class="error"><?php echo $error; ?></div>
+        <?php endif; ?>
+
+        <form method="POST" action="">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" name="email" id="email" required />
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" name="password" id="password" required />
+                <div class="show-password">
+                    <input type="checkbox" id="togglePassword" onclick="togglePasswordVisibility()" />
+                    <label for="togglePassword">Show Password</label>
                 </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                <button type="submit" class="btn">Login</button>
-            </form>
+            </div>
+            <button type="submit" class="btn">Login</button>
+        </form>
+
+        <div class="button-group">
+            <a class="forgot-password" href="forgot_password.php">Forgot Password?</a>
         </div>
     </div>
+
+    <script>
+        function togglePasswordVisibility() {
+            const passwordField = document.getElementById("password");
+            passwordField.type = passwordField.type === "password" ? "text" : "password";
+        }
+    </script>
 </body>
 </html>
