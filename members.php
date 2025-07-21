@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $phone = sanitize($_POST['phone']);
         $address = sanitize($_POST['address']);
         $gender = sanitize($_POST['gender']);
+        $category = sanitize($_POST['category']); // New field
         $is_staff = isset($_POST['is_staff']) ? 1 : 0;
         $join_date = sanitize($_POST['join_date']);
         $birth_date = sanitize($_POST['birth_date']);
@@ -35,11 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        $sql = "INSERT INTO members (first_name, last_name, email, phone, address, gender, passport_picture, is_staff, join_date, birth_date) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO members (first_name, last_name, email, phone, address, gender, passport_picture, is_staff, join_date, birth_date, category) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("sssssssiss", $first_name, $last_name, $email, $phone, $address, $gender, $passport_picture, $is_staff, $join_date, $birth_date);
+        $stmt->bind_param("sssssssissi", $first_name, $last_name, $email, $phone, $address, $gender, $passport_picture, $is_staff, $join_date, $birth_date, $category);
         
         if ($stmt->execute()) {
             $_SESSION['success'] = "Member added successfully!";
@@ -48,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $stmt->close();
         
-        header("Location: members.php");
+        header("Location:members.php");
         exit;
     } elseif (isset($_POST['update_member'])) {
         // Update member
@@ -59,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $phone = sanitize($_POST['phone']);
         $address = sanitize($_POST['address']);
         $gender = sanitize($_POST['gender']);
+        $category = sanitize($_POST['category']); // New field
         $is_staff = isset($_POST['is_staff']) ? 1 : 0;
         $join_date = sanitize($_POST['join_date']);
         $birth_date = sanitize($_POST['birth_date']);
@@ -95,11 +97,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 passport_picture = ?,
                 is_staff = ?,
                 join_date = ?,
-                birth_date = ?
+                birth_date = ?,
+                category = ?
                 WHERE id = ?";
         
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("sssssssissi", $first_name, $last_name, $email, $phone, $address, $gender, $passport_picture, $is_staff, $join_date, $birth_date, $id);
+        $stmt->bind_param("sssssssissii", $first_name, $last_name, $email, $phone, $address, $gender, $passport_picture, $is_staff, $join_date, $birth_date, $category, $id);
         
         if ($stmt->execute()) {
             $_SESSION['success'] = "Member updated successfully!";
@@ -140,7 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $stmt->close();
         
-        header("Location: umembers.php");
+        header("Location: members.php");
         exit;
     }
 }
@@ -161,104 +164,106 @@ if ($result->num_rows > 0) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Members - Church of Christ</title>
     <style>
-        /* admin.css */
-:root {
-    --primary-color: #4a6fa5;
-    --secondary-color: #166088;
-    --accent-color: #4fc3f7;
-    --light-color:rgba(241, 230, 230, 0.98);
-    --dark-color:rgb(26, 22, 22);
-    --success-color: #28a745;
-    --warning-color:rgb(202, 185, 33);
-    --danger-color:rgb(26, 3, 5);
-    --sidebar-width: 250px;
-    --header-height: 80px;
-}
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #166088;
+            --accent-color: #4fc3f7;
+            --light-color:rgba(241, 230, 230, 0.98);
+            --dark-color:rgb(26, 22, 22);
+            --success-color: #28a745;
+            --warning-color:rgb(202, 185, 33);
+            --danger-color:rgb(26, 3, 5);
+            --sidebar-width: 250px;
+            --header-height: 80px;
+            --youth-color: #4361ee;
+            --child-color: #f72585;
+            --none-color: #6c757d;
+        }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-body {
-    font-family: 'Poppins', sans-serif;
-    background-color:rgb(87, 103, 128);
-    color: #333;
-    line-height: 1.6;
-}
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color:rgb(87, 103, 128);
+            color: #333;
+            line-height: 1.6;
+        }
 
-.admin-container {
-    display: flex;
-    min-height: 100vh;
-}
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+        }
 
-/* Sidebar Styles */
-.sidebar {
-    width: var(--sidebar-width);
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    color: white;
-    padding: 20px 0;
-    position: fixed;
-    height: 100vh;
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-    z-index: 100;
-}
+        /* Sidebar Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 20px 0;
+            position: fixed;
+            height: 100vh;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
 
-.sidebar-header {
-    padding: 0 20px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 20px;
-}
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
 
-.sidebar-header h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-bottom: 5px;
-}
+        .sidebar-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
 
-.sidebar-header p {
-    font-size: 0.9rem;
-    opacity: 0.8;
-}
+        .sidebar-header p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
 
-.sidebar-nav ul {
-    list-style: none;
-}
+        .sidebar-nav ul {
+            list-style: none;
+        }
 
-.sidebar-nav li {
-    margin-bottom: 5px;
-}
+        .sidebar-nav li {
+            margin-bottom: 5px;
+        }
 
-.sidebar-nav a {
-    display: flex;
-    align-items: center;
-    padding: 12px 20px;
-    color: white;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    font-size: 0.95rem;
-}
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
 
-.sidebar-nav a:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    padding-left: 25px;
-}
+        .sidebar-nav a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding-left: 25px;
+        }
 
-.sidebar-nav a i {
-    margin-right: 10px;
-    width: 20px;
-    text-align: center;
-}
+        .sidebar-nav a i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
 
-.sidebar-nav .active a {
-    background-color: rgba(255, 255, 255, 0.2);
-    border-left: 4px solid var(--accent-color);
-}
-.btn-delete {
+        .sidebar-nav .active a {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-left: 4px solid var(--accent-color);
+        }
+        
+        .btn-delete {
             background: #e74c3c;
             color: black !important;
-            
         }
         
         .btn-delete:hover {
@@ -267,297 +272,331 @@ body {
             box-shadow: 0 4px 8px rgba(192, 57, 43, 0.2);
         }
 
-/* Main Content Styles */
-.admin-content {
-    flex: 1;
-    margin-left: var(--sidebar-width);
-    padding: 20px;
-}
+        /* Main Content Styles */
+        .admin-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+        }
 
-.admin-header {
-    background-color: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    margin-bottom: 20px;
-}
+        .admin-header {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-.admin-header h1 {
-    font-size: 1.8rem;
-    color: var(--dark-color);
-    font-weight: 600;
-}
+        .admin-header h1 {
+            font-size: 1.8rem;
+            color: var(--dark-color);
+            font-weight: 600;
+        }
 
-/* Stats Grid */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
-}
+        /* Category badges */
+        .category-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
 
-.stat-card {
-    background-color: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    display: flex;
-    align-items: center;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
+        .category-youth {
+            background-color: rgba(67, 97, 238, 0.1);
+            color: var(--youth-color);
+        }
 
-.stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
+        .category-child {
+            background-color: rgba(247, 37, 133, 0.1);
+            color: var(--child-color);
+        }
 
-.stat-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background-color: rgba(79, 195, 247, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 15px;
-    color: var(--accent-color);
-    font-size: 1.5rem;
-}
+        .category-none {
+            background-color: rgba(108, 117, 125, 0.1);
+            color: var(--none-color);
+        }
 
-.stat-info h3 {
-    font-size: 1rem;
-    font-weight: 500;
-    color: #666;
-    margin-bottom: 5px;
-}
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
 
-.stat-info p {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--dark-color);
-}
+        .stat-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
 
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    .admin-container {
-        flex-direction: column;
-    }
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: rgba(79, 195, 247, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: var(--accent-color);
+            font-size: 1.5rem;
+        }
 
-    .sidebar {
-        width: 100%;
-        height: auto;
-        position: relative;
-    }
+        .stat-info h3 {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 5px;
+        }
 
-    .admin-content {
-        margin-left: 0;
-    }
+        .stat-info p {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
 
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-}
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .admin-container {
+                flex-direction: column;
+            }
 
-/* Animation for activity items */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
 
-.activity-item {
-    animation: fadeIn 0.3s ease forwards;
-    opacity: 0;
-}
+            .admin-content {
+                margin-left: 0;
+            }
 
-.activity-item:nth-child(1) { animation-delay: 0.1s; }
-.activity-item:nth-child(2) { animation-delay: 0.2s; }
-.activity-item:nth-child(3) { animation-delay: 0.3s; }
-.activity-item:nth-child(4) { animation-delay: 0.4s; }
-.activity-item:nth-child(5) { animation-delay: 0.5s; }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
 
-/* Modal Styles */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5);
-}
+        /* Animation for activity items */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
-.modal-content {
-    background-color: #fefefe;
-    margin: 5% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 700px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
+        .activity-item {
+            animation: fadeIn 0.3s ease forwards;
+            opacity: 0;
+        }
 
-.close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-}
+        .activity-item:nth-child(1) { animation-delay: 0.1s; }
+        .activity-item:nth-child(2) { animation-delay: 0.2s; }
+        .activity-item:nth-child(3) { animation-delay: 0.3s; }
+        .activity-item:nth-child(4) { animation-delay: 0.4s; }
+        .activity-item:nth-child(5) { animation-delay: 0.5s; }
 
-.close:hover {
-    color: black;
-}
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
 
-.form-group {
-    margin-bottom: 15px;
-}
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 700px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
 
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 500;
-}
+        .modal-body {
+            max-height: calc(90vh - 120px);
+            overflow-y: auto;
+            padding-right: 10px;
+        }
 
-.form-group input[type="text"],
-.form-group input[type="email"],
-.form-group input[type="date"],
-.form-group input[type="password"],
-.form-group select,
-.form-group textarea {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-family: inherit;
-}
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
 
-.form-group.checkbox {
-    display: flex;
-    align-items: center;
-}
+        .close:hover {
+            color: black;
+        }
 
-.form-group.checkbox input {
-    margin-right: 10px;
-}
+        .form-group {
+            margin-bottom: 15px;
+        }
 
-.btn {
-    padding: 10px 15px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
 
-.btn-primary {
-    background-color: var(--primary-color);
-    color: white;
-}
+        .form-group input[type="text"],
+        .form-group input[type="email"],
+        .form-group input[type="date"],
+        .form-group input[type="password"],
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+        }
 
-.btn-primary:hover {
-    background-color: var(--secondary-color);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
+        .form-group.checkbox {
+            display: flex;
+            align-items: center;
+        }
 
-/* Table Styles */
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    background-color: white;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
+        .form-group.checkbox input {
+            margin-right: 10px;
+        }
 
-.data-table th,
-.data-table td {
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-}
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
 
-.data-table th {
-    background-color: var(--primary-color);
-    color: white;
-    font-weight: 500;
-}
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
 
-.data-table tr:hover {
-    background-color: #f5f5f5;
-}
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
 
-.data-table img {
-    border-radius: 4px;
-}
+        /* Table Styles */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
 
-.actions {
-    display: flex;
-    gap: 5px;
-}
+        .data-table th,
+        .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
 
-.btn-sm {
-    padding: 5px 10px;
-    font-size: 0.85rem;
-}
+        .data-table th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 500;
+        }
 
-.btn-edit {
-    background-color: var(--accent-color);
-    color: white;
-}
+        .data-table tr:hover {
+            background-color: #f5f5f5;
+        }
 
-.btn-edit:hover {
-    background-color: #3da8d8;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(61, 168, 216, 0.2);
-}
+        .data-table img {
+            border-radius: 4px;
+        }
 
-.btn-delete {
-    background-color: #e74c3c;
-    color: white;
-}
+        .actions {
+            display: flex;
+            gap: 5px;
+        }
 
-.btn-delete:hover {
-    background-color: #c0392b;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(192, 57, 43, 0.2);
-}
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.85rem;
+        }
 
-.alert {
-    padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 4px;
-}
+        .btn-edit {
+            background-color: var(--accent-color);
+            color: white;
+        }
 
-.alert-success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
+        .btn-edit:hover {
+            background-color: #3da8d8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(61, 168, 216, 0.2);
+        }
 
-.alert-error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
+        .btn-delete {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background-color: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(192, 57, 43, 0.2);
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
     </style>
-    <link rel="stylesheet" href="admin.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="admin-container">
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2>Admin Panel</h2>
-                <p>Welcome, <?php echo $_SESSION['admin_username']; ?></p>
+                <p>Welcome, <?php echo isset($_SESSION['admin_username']) ? htmlspecialchars($_SESSION['admin_username']) : 'Admin'; ?></p>
             </div>
             <nav class="sidebar-nav">
                 <ul>
@@ -592,6 +631,7 @@ body {
                         <tr>
                             <th>ID</th>
                             <th>Name</th>
+                            <th>Category</th>
                             <th>Email</th>
                             <th>Phone</th>
                             <th>Gender</th>
@@ -605,13 +645,22 @@ body {
                     <tbody>
                         <?php if (empty($members)): ?>
                             <tr>
-                                <td colspan="10">No members found</td>
+                                <td colspan="11">No members found</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($members as $member): ?>
                                 <tr>
                                     <td><?php echo $member['id']; ?></td>
                                     <td><?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?></td>
+                                    <td>
+                                        <?php if ($member['category'] == 'youth'): ?>
+                                            <span class="category-badge category-youth">Youth</span>
+                                        <?php elseif ($member['category'] == 'child'): ?>
+                                            <span class="category-badge category-child">Child</span>
+                                        <?php else: ?>
+                                            <span class="category-badge category-none">None</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?php echo htmlspecialchars($member['email']); ?></td>
                                     <td><?php echo htmlspecialchars($member['phone']); ?></td>
                                     <td><?php echo htmlspecialchars($member['gender']); ?></td>
@@ -644,59 +693,70 @@ body {
         <div class="modal-content">
             <span class="close">&times;</span>
             <h2 id="modalTitle">Add New Member</h2>
-            <form id="memberForm" method="POST" enctype="multipart/form-data">
-                <input type="hidden" id="member_id" name="member_id">
-                <input type="hidden" id="existing_passport_picture" name="existing_passport_picture" value="">
-                <div class="form-group">
-                    <label for="first_name">First Name</label>
-                    <input type="text" id="first_name" name="first_name" required>
-                </div>
-                <div class="form-group">
-                    <label for="last_name">Last Name</label>
-                    <input type="text" id="last_name" name="last_name" required>
-                </div>
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email">
-                </div>
-                <div class="form-group">
-                    <label for="phone">Phone</label>
-                    <input type="text" id="phone" name="phone">
-                </div>
-                <div class="form-group">
-                    <label for="address">Address</label>
-                    <textarea id="address" name="address" rows="3"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="gender">Gender</label>
-                    <select id="gender" name="gender" required>
-                        <option value="">Select Gender</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="passport_picture">Passport Picture</label>
-                    <input type="file" id="passport_picture" name="passport_picture" accept="image/*">
-                    <div id="passport_preview" style="margin-top: 10px;"></div>
-                </div>
-                <div class="form-group">
-                    <label for="birth_date">Birth Date</label>
-                    <input type="date" id="birth_date" name="birth_date" required>
-                </div>
-                <div class="form-group">
-                    <label for="join_date">Join Date</label>
-                    <input type="date" id="join_date" name="join_date" required>
-                </div>
-                <div class="form-group checkbox">
-                    <input type="checkbox" id="is_staff" name="is_staff">
-                    <label for="is_staff">Is Staff Member</label>
-                </div>
-                <div class="form-group">
-                    <button type="submit" id="submitBtn" name="add_member" class="btn btn-primary">Add Member</button>
-                </div>
-            </form>
+            <div class="modal-body">
+                <form id="memberForm" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" id="member_id" name="member_id">
+                    <input type="hidden" id="existing_passport_picture" name="existing_passport_picture" value="">
+                    <div class="form-group">
+                        <label for="first_name">First Name</label>
+                        <input type="text" id="first_name" name="first_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="last_name">Last Name</label>
+                        <input type="text" id="last_name" name="last_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone</label>
+                        <input type="text" id="phone" name="phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="address">Address</label>
+                        <textarea id="address" name="address" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="gender">Gender</label>
+                        <select id="gender" name="gender" required>
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="category" name="category" required>
+                            <option value="">Select Category</option>
+                            <option value="youth">Youth</option>
+                            <option value="child">Child</option>
+                            <option value="none">None</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="passport_picture">Passport Picture</label>
+                        <input type="file" id="passport_picture" name="passport_picture" accept="image/*">
+                        <div id="passport_preview" style="margin-top: 10px;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="birth_date">Birth Date</label>
+                        <input type="date" id="birth_date" name="birth_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="join_date">Join Date</label>
+                        <input type="date" id="join_date" name="join_date" required>
+                    </div>
+                    <div class="form-group checkbox">
+                        <input type="checkbox" id="is_staff" name="is_staff">
+                        <label for="is_staff">Is Staff Member</label>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" id="submitBtn" name="add_member" class="btn btn-primary">Add Member</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -753,6 +813,7 @@ body {
                                 document.getElementById('phone').value = member.phone;
                                 document.getElementById('address').value = member.address;
                                 document.getElementById('gender').value = member.gender;
+                                document.getElementById('category').value = member.category || 'none';
                                 document.getElementById('birth_date').value = member.birth_date;
                                 document.getElementById('join_date').value = member.join_date;
                                 document.getElementById('is_staff').checked = member.is_staff == 1;

@@ -5,21 +5,35 @@ requireAdminLogin();
 
 header('Content-Type: application/json');
 
-if (isset($_GET['id'])) {
-    $id = intval($_GET['id']);
-    $sql = "SELECT * FROM members WHERE id = ?";
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Invalid Member ID']);
+    exit;
+}
+
+$memberId = intval($_GET['id']);
+
+try {
+    $sql = "SELECT *, 
+            TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) AS age 
+            FROM members WHERE id = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $id);
+    $stmt->bind_param("i", $memberId);
     $stmt->execute();
     $result = $stmt->get_result();
-    
-    if ($result->num_rows === 1) {
-        echo json_encode($result->fetch_assoc());
+
+    if ($result->num_rows > 0) {
+        $member = $result->fetch_assoc();
+        echo json_encode($member);
     } else {
-        echo json_encode(null);
+        http_response_code(404);
+        echo json_encode(['error' => 'Member not found']);
     }
-    $stmt->close();
-} else {
-    echo json_encode(null);
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+} finally {
+    if (isset($stmt)) $stmt->close();
+    if (isset($conn)) $conn->close();
 }
 ?>
