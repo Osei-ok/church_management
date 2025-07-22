@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 27, 2025 at 06:19 PM
+-- Generation Time: Jul 22, 2025 at 06:11 PM
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.0.28
 
@@ -42,6 +42,28 @@ CREATE TABLE `admins` (
 
 INSERT INTO `admins` (`id`, `email`, `password`, `created_at`, `reset_token`, `reset_expires`) VALUES
 (1, 'admin@example.com', '$2y$10$CiVxH3v4pZcZ2p/dXqiTOuzRQp7i/Q0nYCOHka1jcxwR/WOIBhD9O', '2025-04-11 19:21:11', NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `attendance`
+--
+
+CREATE TABLE `attendance` (
+  `id` int(11) NOT NULL,
+  `member_id` int(11) NOT NULL,
+  `attendance_date` date NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+--
+-- Dumping data for table `attendance`
+--
+
+INSERT INTO `attendance` (`id`, `member_id`, `attendance_date`, `created_at`) VALUES
+(14, 1, '2025-07-19', '2025-07-19 18:38:03'),
+(18, 8, '2025-07-21', '2025-07-21 17:59:02'),
+(19, 1, '2025-07-21', '2025-07-21 17:59:02');
 
 -- --------------------------------------------------------
 
@@ -95,7 +117,17 @@ INSERT INTO `finances` (`id`, `title`, `description`, `amount`, `transaction_typ
 (4, 'Sunday Offering', '', 7.00, 'Income', '2025-05-08', '2025-05-08 19:03:12'),
 (5, 'Sunday Offering', '', 7.00, 'Income', '2025-05-08', '2025-05-08 19:10:50'),
 (6, 'Sunday Offering', '', 7.00, 'Income', '2025-05-08', '2025-05-08 19:14:45'),
-(7, 'Sunday Offering', '', 7.00, 'Income', '2025-05-08', '2025-05-08 19:15:22');
+(7, 'Sunday Offering', '', 7.00, 'Income', '2025-05-08', '2025-05-08 19:15:22'),
+(8, 'Sunday Offering', '', 3222.00, 'Income', '2025-07-12', '2025-07-12 19:21:16'),
+(9, 'Benevolence', '', 97.00, 'Income', '2025-07-12', '2025-07-12 19:21:50'),
+(10, 'Building Fund', 'Gods working', 90000.00, 'Income', '2025-07-12', '2025-07-12 19:25:39'),
+(11, 'Missions', '', 44.97, 'Income', '2025-07-14', '2025-07-14 14:32:21'),
+(12, 'Sunday Offering', 'Gods work', 3222.00, 'Income', '2025-07-14', '2025-07-14 16:00:55'),
+(13, 'Sunday Offering', 'Gods work', 3222.00, 'Income', '2025-07-14', '2025-07-14 16:36:32'),
+(14, 'Sunday Offering', 'Gods work', 3222.00, 'Income', '2025-07-14', '2025-07-14 16:36:54'),
+(15, 'Benevolence', '', 76548.00, 'Income', '2025-07-14', '2025-07-14 16:38:39'),
+(16, 'Benevolence', '', 76548.00, 'Income', '2025-07-14', '2025-07-14 16:42:39'),
+(17, 'Missions', '', 532.00, 'Income', '2025-07-14', '2025-07-14 17:12:02');
 
 -- --------------------------------------------------------
 
@@ -117,16 +149,18 @@ CREATE TABLE `members` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `join_date` date DEFAULT NULL,
   `image` varchar(255) DEFAULT 'assets/default-avatar.png',
-  `notes` text DEFAULT NULL
+  `notes` text DEFAULT NULL,
+  `category` varchar(10) NOT NULL DEFAULT 'none'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Dumping data for table `members`
 --
 
-INSERT INTO `members` (`id`, `first_name`, `last_name`, `email`, `phone`, `address`, `gender`, `passport_picture`, `birth_date`, `is_staff`, `created_at`, `join_date`, `image`, `notes`) VALUES
-(1, 'koo', 'ding', 'yaa@gmail.com', '0232655778', 'GE-102-333', 'Male', 'uploads/passport_pictures/passport_6821216e4ab60.jpg', '1999-03-16', 0, '2025-04-11 19:58:56', '2020-05-16', 'assets/default-avatar.png', NULL),
-(7, 'Edith', 'Osei', 'esi@yahoo.com', '0232655778', 'GW-123-452 ', 'Female', 'uploads/passport_pictures/passport_68571602a5597.jpg', '1975-06-14', 0, '2025-05-12 18:38:42', '2000-05-12', 'assets/default-avatar.png', NULL);
+INSERT INTO `members` (`id`, `first_name`, `last_name`, `email`, `phone`, `address`, `gender`, `passport_picture`, `birth_date`, `is_staff`, `created_at`, `join_date`, `image`, `notes`, `category`) VALUES
+(1, 'koo', 'ding', 'yaa@gmail.com', '0232655778', 'GE-102-333', 'Male', 'uploads/passport_pictures/passport_6821216e4ab60.jpg', '1999-03-16', 1, '2025-04-11 19:58:56', '2020-05-16', 'assets/default-avatar.png', NULL, '0'),
+(7, 'Edith', 'Osei', 'esi@yahoo.com', '0232655778', 'GW-123-452 ', 'Female', 'uploads/passport_pictures/passport_68571602a5597.jpg', '1975-06-14', 0, '2025-05-12 18:38:42', '2000-05-12', 'assets/default-avatar.png', NULL, 'youth'),
+(8, 'Evans', 'Obeng', 'evans@gmail.com', '0544302312', 'GW-412-7761', 'Male', 'uploads/passport_pictures/passport_687e7d22b5d2c.jpg', '2005-03-08', 0, '2025-07-21 17:47:14', '2015-06-17', 'assets/default-avatar.png', NULL, '0');
 
 -- --------------------------------------------------------
 
@@ -193,6 +227,13 @@ ALTER TABLE `admins`
   ADD UNIQUE KEY `email` (`email`);
 
 --
+-- Indexes for table `attendance`
+--
+ALTER TABLE `attendance`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_attendance` (`member_id`,`attendance_date`);
+
+--
 -- Indexes for table `events`
 --
 ALTER TABLE `events`
@@ -233,6 +274,12 @@ ALTER TABLE `admins`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
+-- AUTO_INCREMENT for table `attendance`
+--
+ALTER TABLE `attendance`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+
+--
 -- AUTO_INCREMENT for table `events`
 --
 ALTER TABLE `events`
@@ -242,13 +289,13 @@ ALTER TABLE `events`
 -- AUTO_INCREMENT for table `finances`
 --
 ALTER TABLE `finances`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `members`
 --
 ALTER TABLE `members`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `sermons`
@@ -271,6 +318,12 @@ ALTER TABLE `visitors`
 --
 ALTER TABLE `admins`
   ADD CONSTRAINT `admins_ibfk_1` FOREIGN KEY (`id`) REFERENCES `members` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Constraints for table `attendance`
+--
+ALTER TABLE `attendance`
+  ADD CONSTRAINT `attendance_ibfk_1` FOREIGN KEY (`member_id`) REFERENCES `members` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
